@@ -5,20 +5,29 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.camera.mlkit.vision.MlKitAnalyzer
+import androidx.camera.view.CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED
 import androidx.camera.view.LifecycleCameraController
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 
 class MainActivity : ComponentActivity() {
 
+    private val viewModel: CameraScanViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Request camera permissions
         if (allPermissionsGranted()) {
             val cameraController = buildCameraController()
             setContent {
-                CameraView(cameraController)
+                CameraView(
+                    cameraController = cameraController,
+                    barcodesFlow = viewModel.barcodesFlow
+                )
             }
         } else {
             ActivityCompat.requestPermissions(
@@ -30,6 +39,26 @@ class MainActivity : ComponentActivity() {
     private fun buildCameraController(): LifecycleCameraController {
         val cameraController = LifecycleCameraController(baseContext)
         cameraController.bindToLifecycle(this)
+
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+            .build()
+        val barcodeScanner = BarcodeScanning.getClient(options)
+
+        cameraController.setImageAnalysisAnalyzer(
+            ContextCompat.getMainExecutor(this),
+            MlKitAnalyzer(
+                listOf(barcodeScanner),
+                COORDINATE_SYSTEM_VIEW_REFERENCED,
+                ContextCompat.getMainExecutor(this)
+            ) { result: MlKitAnalyzer.Result? ->
+                val barcodeResults = result?.getValue(barcodeScanner)
+                if (!barcodeResults.isNullOrEmpty()) {
+                    viewModel.barcodesDetected(barcodeResults)
+                }
+            }
+        )
+
         return cameraController
     }
 
