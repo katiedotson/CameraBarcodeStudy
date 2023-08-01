@@ -26,7 +26,12 @@ class MainActivity : ComponentActivity() {
             setContent {
                 CameraView(
                     cameraController = cameraController,
-                    barcodesFlow = viewModel.barcodesFlow
+                    barcodesFlow = viewModel.barcodesFlow,
+                    torchEnabledFlow = viewModel.torchFlow,
+                    onTorchButtonClicked = {
+                        cameraController.enableTorch(!viewModel.torchFlow.value)
+                        viewModel.updateTorchEnabled()
+                    }
                 )
             }
         } else {

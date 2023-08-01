@@ -10,11 +10,20 @@ class CameraScanViewModel: ViewModel() {
     val barcodesFlow: StateFlow<BarcodeModel> get() = _barcodesFlow
     private val _barcodesFlow = MutableStateFlow(BarcodeModel("", ""))
 
-    fun barcodesDetected(barcodeResults: MutableList<Barcode>?) {
-        barcodeResults?.let {
-            val barcode = it[0]
-            val barcodeModel = BarcodeModel(barcode.rawValue ?: "", barcode.valueType.toString(), barcode.boundingBox)
-            _barcodesFlow.value = barcodeModel
-        }
+    val torchFlow: StateFlow<Boolean> get() = _torchFlow
+    private val _torchFlow = MutableStateFlow(false)
+
+    fun barcodesDetected(barcodeResults: List<Barcode>) {
+        val barcode = barcodeResults[0]
+        val barcodeModel = BarcodeModel(
+            barcode = barcode.rawValue ?: "",
+            barcodeType = barcode.valueType.toString(),
+            boundingRect = barcode.boundingBox
+        )
+        _barcodesFlow.value = barcodeModel
+    }
+
+    fun updateTorchEnabled() {
+        _torchFlow.value = !_torchFlow.value
     }
 }
